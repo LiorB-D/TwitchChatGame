@@ -1,0 +1,159 @@
+<html>
+    <head>
+        <script src = "tmi.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.min.js" integrity="sha512-WIklPM6qPCIp6d3fSSr90j+1unQHUOoWDS4sdTiR8gxUTnyZ8S2Mr8e10sKKJ/bhJgpAa/qG068RDkg6fIlNFA==" crossorigin="anonymous"></script>
+        <script>
+            let screenDim = 600
+            let players = []
+            let boxes = {unChosen: [], A: [], B: [], C: [], D: []}
+            let round = 0
+            let timeLeft = 5
+            let mostRecentEliminated = "Type Join To Enter The Game"
+            function setup() {
+                console.log("Setting Up")
+                createCanvas(screenDim + 300 ,screenDim + 300);
+                frameRate(100); //FPS
+                setupClient()
+                resetBoxes()
+                timeLeft = 15
+            }
+            function resetBoxes() {
+                timeLeft = 5
+                round += 1
+                boxes = {unChosen: players.slice(), A: [], B: [], C: [], D: []}
+                console.log(boxes)
+                console.log(players)
+            }
+            function clearName(name) {
+                console.log("Clearing Name")
+                boxes.unChosen = boxes.unChosen.filter((elem) => elem !== name)
+                boxes.A = boxes.A.filter((elem) => elem !== name)
+                boxes.B = boxes.B.filter((elem) => elem !== name)
+                boxes.C = boxes.C.filter((elem) => elem !== name)
+                boxes.D = boxes.D.filter((elem) => elem !== name)
+                
+                console.log(boxes)
+            }
+            function setupClient() {
+                const client = new tmi.Client({
+                    channels: [ 'liorbd' ]
+                });
+                
+                client.connect();
+                
+                client.on('message', (channel, tags, message, self) => {
+                    // "Alca: Hello, World!"
+                    console.log(`${tags['display-name']}: ${message}`);
+                    let name = tags['display-name']
+                    if(round == 1 && message == "join") {
+                        players.push(name)
+                        boxes.unChosen.push(name)
+                        console.log(boxes)
+                    }
+                    
+                    if(players.includes(name)){
+                        switch(message) {
+                            case "A":
+                                clearName(name)
+                                boxes.A.push(name)
+                            break;
+                            case "B":
+                                clearName(name)
+                                boxes.B.push(name)
+                            break; 
+                            case "C":
+                                clearName(name)
+                                boxes.C.push(name)
+                            break;
+                            case "D":
+                                clearName(name)
+                                boxes.D.push(name)
+                            break;
+                        }
+                    }
+                });
+            }
+
+            function draw() {
+                clear()
+                noFill()
+                stroke('green')
+                strokeWeight(5)
+                square(0,50, screenDim)
+                line(screenDim / 2, 50 + 0, screenDim / 2, 50 + screenDim)
+                line(0, 50 + screenDim / 2, screenDim, 50 + screenDim / 2)
+
+                noStroke()
+                fill('black')
+                textSize(32)
+                text('A', screenDim / 4, 50 + screenDim / 4)
+                text('B', 3 * screenDim / 4, 50 + screenDim / 4)
+                text('C', screenDim / 4, 50 + 3 * screenDim / 4)
+                text('D', 3 * screenDim / 4, 50 + 3 * screenDim / 4)
+                
+                textSize(20)
+                boxes.unChosen.forEach((player, ind) => {
+                    text(player, screenDim + 10, 70 + ind * 20)
+                })
+                boxes.A.forEach((player, ind) => {
+                    text(player, screenDim / 4 - 50, 70 + ind * 20)
+                })
+                boxes.B.forEach((player, ind) => {
+                    text(player, 3 * screenDim / 4 - 50, 70 + ind * 20)
+                })
+                boxes.C.forEach((player, ind) => {
+                    text(player, screenDim / 4 - 50, screenDim / 2 + 70 + ind * 20)
+                })
+                boxes.D.forEach((player, ind) => {
+                    text(player, 3 * screenDim / 4 - 50, screenDim / 2 + 70 + ind * 20)
+                })
+
+                textSize(32)
+                text("Round: " + round + ", Time to Choose: " + (Math.round(timeLeft * 10) / 10), screenDim / 6, 30)
+                timeLeft -= 0.01
+                text(mostRecentEliminated, screenDim / 6, screenDim + 100)
+                if(timeLeft <= 0) {
+                    boxes.unChosen.forEach((name) => {
+                        players.splice(players.indexOf(name), 1)
+                    })
+                    let randInd = Math.floor(Math.random() * 4)
+                    switch(randInd) {
+                        case 0:
+                            boxes.A.forEach((name) => {
+                                players.splice(players.indexOf(name), 1)
+                                console.log("Removing: " + name)
+                            })
+                            mostRecentEliminated = "Box A was just eliminated"
+                        break;
+                        case 1:
+                            boxes.B.forEach((name) => {
+                                players.splice(players.indexOf(name), 1)
+                            })
+                            mostRecentEliminated = "Box B was just eliminated"
+                        break;
+                        case 2:
+                            boxes.C.forEach((name) => {
+                                players.splice(players.indexOf(name), 1)
+                            })
+                            mostRecentEliminated = "Box C was just eliminated"
+                        break;
+                        case 3:
+                            boxes.D.forEach((name) => {
+                                players.splice(players.indexOf(name), 1)
+                            })
+                            mostRecentEliminated = "Box D was just eliminated"
+                        break;
+                    }
+                    resetBoxes()
+                    if(players.length == 0) {
+                        timeLeft = 15
+                        round = 0
+                        mostRecentEliminated = "Type Join To Enter The Game"
+                    }
+                }
+            }
+
+
+        </script>
+    </head>
+</html>
